@@ -1,53 +1,47 @@
-
 local m,s,e
 
-m=Map("taskplan",translate("Startup task"),translate("<b>The original [Timing Settings] includes scheduled task execution and startup task execution. Presets include over 10 functions, including restart, shutdown, network restart, memory release, system cleaning, network sharing, network shutdown, automatic detection of network disconnects and reconnection, MWAN3 load balancing detection of reconnection, and custom scripts</b></br>") ..
-translate("The task to be executed upon startup, with a startup delay time unit of seconds."))
+m=Map("taskplan",translate("自动登录设置"),translate("<b>本功能用于设置开机自动登录宽带，支持中国电信、中国移动和中国联通等运营商。</b></br>") ..
+translate("开机后将按照设定的延时时间（秒）自动执行登录操作。"))
 
 s = m:section(TypedSection, 'global')
 s.anonymous=true
 
-e=s:option(TextValue, "customscript" ,translate("Edit Custom Script"))
-e.description = translate("The execution content of the [Scheduled Customscript] in the task name")
+e=s:option(TextValue, "customscript" ,translate("自定义脚本"))
+e.description = translate("可以在此处添加自定义登录脚本")
 e.rows = 5
 e.default=" "
 
-e=s:option(TextValue, "customscript2" ,translate("Edit Custom Script2"))
-e.description = translate("The execution content of the [Scheduled Customscript2] in the task name")
-e.rows = 5
-e.default=" "
-
-s=m:section(TypedSection,"ltime","")
+s=m:section(TypedSection,"ltime",translate("自动登录配置"))
 s.addremove=true
 s.anonymous=true
 s.template = "cbi/tblsection"
 
-e = s:option(Value, 'remarks', translate('Remarks'))
+e = s:option(Value, 'remarks', translate('备注'))
+e.default = "宽带自动登录"
 
-e=s:option(Flag,"enable",translate("Enable"))
+e=s:option(Flag,"enable",translate("启用"))
 e.rmempty = false
 e.default=0
 
-e=s:option(ListValue,"stype",translate("Scheduled Type"))
-e:value(1,translate("Scheduled Reboot"))
-e:value(2,translate("Scheduled Poweroff"))
-e:value(3,translate("Scheduled ReNetwork"))
-e:value(4,translate("Scheduled RestartSamba"))
-e:value(5,translate("Scheduled Restartwan"))
-e:value(6,translate("Scheduled Closewan"))
-e:value(7,translate("Scheduled Clearmem"))
-e:value(8,translate("Scheduled Sysfree"))
-e:value(9,translate("Scheduled DisReconn"))
-e:value(10,translate("Scheduled DisRereboot"))
-e:value(11,translate("Scheduled Restartmwan3"))
-e:value(13,translate("Scheduled Wifiup"))
-e:value(14,translate("Scheduled Wifidown"))
-e:value(12,translate("Scheduled Customscript"))
-e:value(15,translate("Scheduled Customscript2"))
-e.default=2
+e=s:option(Value, "username", translate("用户名"))
+e.rmempty = true
 
-e=s:option(Value,"delay",translate("Delayed Start(seconds)"))
-e.default=10
+e=s:option(Value, "password", translate("密码"))
+e.password = true
+e.rmempty = true
+
+e=s:option(ListValue,"operator",translate("运营商"))
+e:value("telecom", translate("中国电信"))
+e:value("mobile", translate("中国移动"))
+e:value("unicom", translate("中国联通"))
+e.default="telecom"
+
+e=s:option(Flag,"autologin",translate("开机自动登录"))
+e.rmempty = false
+e.default=1
+
+e=s:option(Value,"delay",translate("延时登录(秒)"))
+e.default=30
 
 m.apply_on_parse = true
 m.on_after_apply = function(self,map)
