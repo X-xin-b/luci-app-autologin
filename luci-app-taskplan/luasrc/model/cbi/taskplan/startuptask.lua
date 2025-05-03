@@ -6,18 +6,11 @@ translate("开机后将按照设定的延时时间（秒）自动执行登录操
 s = m:section(TypedSection, 'global')
 s.anonymous=true
 
-e=s:option(TextValue, "customscript" ,translate("自定义脚本"))
-e.description = translate("可以在此处添加自定义登录脚本")
-e.rows = 5
-e.default=" "
 
-s=m:section(TypedSection,"ltime",translate("自动登录配置"))
-s.addremove=true
+s=m:section(TypedSection,"ltime",translate("开机登录配置"))
 s.anonymous=true
 s.template = "cbi/tblsection"
 
-e = s:option(Value, 'remarks', translate('备注'))
-e.default = "宽带自动登录"
 
 e=s:option(Flag,"enable",translate("启用"))
 e.rmempty = false
@@ -27,7 +20,6 @@ e=s:option(Value, "username", translate("用户名"))
 e.rmempty = true
 
 e=s:option(Value, "password", translate("密码"))
-e.password = true
 e.rmempty = true
 
 e=s:option(ListValue,"operator",translate("运营商"))
@@ -36,12 +28,28 @@ e:value("mobile", translate("中国移动"))
 e:value("unicom", translate("中国联通"))
 e.default="telecom"
 
-e=s:option(Flag,"autologin",translate("开机自动登录"))
-e.rmempty = false
-e.default=1
 
 e=s:option(Value,"delay",translate("延时登录(秒)"))
 e.default=30
+
+-- 添加登录检测配置部分
+s=m:section(NamedSection,"check","check",translate("登录检测配置"))
+s.anonymous=true
+s.addremove=false  -- 确保不能添加或删除此部分
+
+e=s:option(Flag,"enable_check",translate("启用登录检测"))
+e.rmempty = false
+e.default=1
+e.description = translate("启用后将检测登录是否成功")
+
+e=s:option(Value,"check_interval",translate("检测间隔(分钟)"))
+e.default=5
+e.datatype = "uinteger"
+
+e=s:option(Value,"check_target",translate("检测目标"))
+e.default="www.baidu.com"
+e.rmempty = false
+e.description = translate("输入要ping的网址或IP地址，用于检测网络连接")
 
 m.apply_on_parse = true
 m.on_after_apply = function(self,map)

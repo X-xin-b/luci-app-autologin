@@ -9,7 +9,6 @@ function index()
         local e = entry({"admin", "login", "taskplan"}, alias("admin", "login", "taskplan", "scheduledtask"), _("Task Plan"), 20)
 	e.dependent = false
 	e.acl_depends = { "luci-app-taskplan" }
-        entry({"admin", "login", "taskplan", "scheduledtask"}, cbi("taskplan/scheduledtask"),  _("Scheduled task"), 10).leaf = true
         entry({"admin", "login", "taskplan", "startuptask"}, cbi("taskplan/startuptask"),  _("Startup task"), 20).leaf = true
         entry({"admin", "login", "taskplan", "log"}, form("taskplan/log"), _("Log"), 30).leaf = true
         entry({"admin","login","taskplan","dellog"},call("dellog"))
