@@ -19,6 +19,104 @@ limit_log() {
 	fi
 }
 
+# 获取本机IP地址
+get_local_ip() {
+    local ip=$(ip addr show | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1 | head -n 1)
+    echo "$ip"
+}
+
+# 登录函数
+do_login() {
+    local username="$1"
+    local password="$2"
+    local operator="$3"
+    local ip=$(get_local_ip)
+    
+    # 构建完整的用户账号（根据运营商添加后缀）
+    local full_username="${username}@${operator}"
+    
+    log "尝试使用账号 $full_username 登录"
+    
+    # 构建登录URL
+    local login_url="http://10.17.8.18:801/eportal/portal/login?callback=dr1003&login_method=1&user_account=${full_username}&user_password=${password}&wlan_user_ip=${ip}&wlan_user_ipv6=&wlan_user_mac=000000000000&wlan_ac_ip=&wlan_ac_name=&jsVersion=4.1.3&terminal_type=2&lang=zh-cn&v=7670&lang=zh"
+    
+    # 发送登录请求
+    local response=$(curl -s "$login_url")
+    
+    # 检查登录结果
+    if echo "$response" | grep -q '"result":1'; then
+        log "登录成功: $response"
+        return 0
+    elif echo "$response" | grep -q '"result":0' && echo "$response" | grep -q "已经在线"; then
+        log "已经在线: $response"
+        return 0
+    else
+        log "登录失败: $response"
+        return 1
+    fi
+}
+
+# 登录检测函数
+checklogin() {
+    # 获取配置
+    local enable_check=$(uci -q get taskplan.check.enable_check)
+    local check_target=$(uci -q get taskplan.check.check_target)
+    
+    # 如果未启用检测，直接返回
+    [ "$enable_check" != "1" ] && return 0
+    
+    # 如果未设置检测目标，使用默认值
+    [ -z "$check_target" ] && check_target="www.baidu.com"
+    
+    log "开始检测网络连接: ping $check_target"
+    
+    # 执行ping测试
+    if ping -c 3 -W 5 "$check_target" >/dev/null 2>&1; then
+        log "网络连接正常，可以访问 $check_target"
+        return 0
+    else
+        log "网络连接异常，无法访问 $check_target，尝试重新登录"
+        
+        # 获取登录配置
+        local lsum=$(grep -c ltime /etc/config/taskplan)
+        local username=""
+        local password=""
+        local operator=""
+        
+        # 查找启用的登录配置
+        for i in $(seq 0 $((lsum-1))); do
+            local enable=$(uci -q get taskplan.@ltime[$i].enable)
+            if [ "$enable" = "1" ]; then
+                username=$(uci -q get taskplan.@ltime[$i].username)
+                password=$(uci -q get taskplan.@ltime[$i].password)
+                operator=$(uci -q get taskplan.@ltime[$i].operator)
+                break
+            fi
+        done
+        
+        # 如果找不到有效配置，退出
+        if [ -z "$username" ] || [ -z "$password" ] || [ -z "$operator" ]; then
+            log "未找到有效的登录配置，无法执行自动登录"
+            return 1
+        fi
+        
+        # 执行登录操作
+        do_login "$username" "$password" "$operator"
+        
+        # 等待网络恢复
+        sleep 5
+        
+        # 再次检测网络连接
+        if ping -c 3 -W 5 "$check_target" >/dev/null 2>&1; then
+            log "重新登录成功，网络连接已恢复"
+            return 0
+        else
+            log "重新登录失败，网络连接仍然异常"
+            return 1
+        fi
+    fi
+}
+
 remwan3() {
 while true; do   
     status=$(/usr/sbin/mwan3 status | grep error)
@@ -140,6 +238,9 @@ trigger() {
 		uci set wireless.radio1.disabled=1
 		uci commit wireless
 		wifi down
+		;;
+	checklogin)
+		checklogin
 		;;
 	esac
 }

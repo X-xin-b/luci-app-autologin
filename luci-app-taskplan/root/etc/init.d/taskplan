@@ -16,6 +16,16 @@ run_taskplan()
 [  `uci -q get taskplan.@global[0].customscript2  |  wc -l ` > 0 ] && uci -q get taskplan.@global[0].customscript2 > /etc/taskplan/taskplancustomscript2
 ssum=$(grep -c stime /etc/config/taskplan)
 lsum=$(grep -c ltime /etc/config/taskplan)
+
+# 添加登录检测定时任务
+enable_check=$(uci -q get taskplan.check.enable_check)
+check_interval=$(uci -q get taskplan.check.check_interval)
+
+if [ "$enable_check" = "1" ] && [ -n "$check_interval" ]; then
+    # 添加新任务
+    echo "*/$check_interval * * * * /usr/bin/taskplanhandler checklogin Login_check" >> $CR
+fi
+
 for i in $(seq 0 $((ssum-1)))
 do
 	enable=$(uci -q get taskplan.@stime[$i].enable )
